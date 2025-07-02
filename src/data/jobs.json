@@ -1,0 +1,320 @@
+[
+    {
+      "id": "job_a1b2c3d4e5",
+      "gpu": "NVIDIA A100",
+      "region": "us-east-1",
+      "cost": 12.75,
+      "status": "running",
+      "runtime": "02:45:30",
+      "createdAt": "2025-06-23T14:30:00Z",
+      "metadata": {
+        "instanceType": "p4d.24xlarge",
+        "memoryUsage": "32GB / 40GB",
+        "cpuCores": 96,
+        "storageUsage": "120GB / 200GB",
+        "owner": "alice@example.com",
+        "project": "Image Classification",
+        "priority": "high",
+        "description": "Training ResNet-152 on ImageNet dataset",
+        "tags": ["ML", "Computer Vision", "Production"],
+        "lastUpdated": "2025-06-24T17:15:00Z"
+      }
+    },
+    {
+      "id": "job_f6g7h8i9j0",
+      "gpu": "NVIDIA A100",
+      "region": "us-west-2",
+      "cost": 8.5,
+      "status": "completed",
+      "runtime": "01:30:15",
+      "createdAt": "2025-06-23T10:15:00Z",
+      "metadata": {
+        "instanceType": "p4d.24xlarge",
+        "memoryUsage": "28GB / 40GB",
+        "cpuCores": 96,
+        "storageUsage": "85GB / 200GB",
+        "owner": "bob@example.com",
+        "project": "NLP Transformer",
+        "priority": "medium",
+        "description": "Fine-tuning BERT for sentiment analysis",
+        "tags": ["NLP", "BERT", "Sentiment"],
+        "lastUpdated": "2025-06-23T11:45:15Z"
+      }
+    },
+    {
+      "id": "job_k1l2m3n4o5",
+      "gpu": "NVIDIA V100",
+      "region": "eu-west-1",
+      "cost": 5.25,
+      "status": "failed",
+      "runtime": "00:45:10",
+      "createdAt": "2025-06-22T22:30:00Z",
+      "metadata": {
+        "instanceType": "p3.2xlarge",
+        "memoryUsage": "14GB / 16GB",
+        "cpuCores": 8,
+        "storageUsage": "45GB / 100GB",
+        "owner": "charlie@example.com",
+        "project": "Reinforcement Learning",
+        "priority": "low",
+        "description": "Training DQN agent for Atari games",
+        "tags": ["RL", "DQN", "Gaming"],
+        "lastUpdated": "2025-06-22T23:15:10Z",
+        "errorMessage": "CUDA out of memory. Tried to allocate 2.2 GiB"
+      }
+    },
+    {
+      "id": "job_p6q7r8s9t0",
+      "gpu": "AMD MI250",
+      "region": "ap-southeast-1",
+      "cost": 9.3,
+      "status": "queued",
+      "runtime": "00:00:00",
+      "createdAt": "2025-06-24T05:45:00Z",
+      "metadata": {
+        "instanceType": "custom-amd-1",
+        "memoryUsage": "0GB / 128GB",
+        "cpuCores": 64,
+        "storageUsage": "0GB / 500GB",
+        "owner": "dave@example.com",
+        "project": "Weather Forecasting",
+        "priority": "high",
+        "description": "Running climate simulation model",
+        "tags": ["Climate", "Simulation", "HPC"],
+        "lastUpdated": "2025-06-24T05:45:00Z"
+      }
+    },
+    {
+      "id": "job_u1v2w3x4y5",
+      "gpu": "NVIDIA A100",
+      "region": "us-east-1",
+      "cost": 3.25,
+      "status": "cancelled",
+      "runtime": "00:15:45",
+      "createdAt": "2025-06-23T18:20:00Z",
+      "metadata": {
+        "instanceType": "p4d.24xlarge",
+        "memoryUsage": "12GB / 40GB",
+        "cpuCores": 96,
+        "storageUsage": "25GB / 200GB",
+        "owner": "eve@example.com",
+        "project": "Recommendation System",
+        "priority": "medium",
+        "description": "Training collaborative filtering model",
+        "tags": ["RecSys", "Collaborative Filtering"],
+        "lastUpdated": "2025-06-23T18:35:45Z"
+      }
+    },
+    {
+      "id": "job_z6a7b8c9d0",
+      "gpu": "NVIDIA T4",
+      "region": "eu-central-1",
+      "cost": 2.15,
+      "status": "running",
+      "runtime": "00:55:20",
+      "createdAt": "2025-06-24T12:10:00Z",
+      "metadata": {
+        "instanceType": "g4dn.xlarge",
+        "memoryUsage": "10GB / 16GB",
+        "cpuCores": 4,
+        "storageUsage": "30GB / 100GB",
+        "owner": "frank@example.com",
+        "project": "Video Transcoding",
+        "priority": "low",
+        "description": "Batch processing video files for streaming",
+        "tags": ["Video", "Transcoding", "Streaming"],
+        "lastUpdated": "2025-06-24T13:05:20Z"
+      }
+    },
+    {
+      "id": "job_e1f2g3h4i5",
+      "gpu": "NVIDIA A10G",
+      "region": "us-west-2",
+      "cost": 4.8,
+      "status": "completed",
+      "runtime": "01:05:40",
+      "createdAt": "2025-06-22T09:30:00Z",
+      "metadata": {
+        "instanceType": "g5.2xlarge",
+        "memoryUsage": "18GB / 24GB",
+        "cpuCores": 8,
+        "storageUsage": "55GB / 150GB",
+        "owner": "grace@example.com",
+        "project": "3D Rendering",
+        "priority": "medium",
+        "description": "Rendering architectural visualization",
+        "tags": ["3D", "Rendering", "Architecture"],
+        "lastUpdated": "2025-06-22T10:35:40Z"
+      }
+    },
+    {
+      "id": "job_j6k7l8m9n0",
+      "gpu": "NVIDIA A100",
+      "region": "ap-northeast-1",
+      "cost": 15.4,
+      "status": "running",
+      "runtime": "05:20:15",
+      "createdAt": "2025-06-23T02:15:00Z",
+      "metadata": {
+        "instanceType": "p4d.24xlarge",
+        "memoryUsage": "36GB / 40GB",
+        "cpuCores": 96,
+        "storageUsage": "180GB / 200GB",
+        "owner": "henry@example.com",
+        "project": "Speech Recognition",
+        "priority": "high",
+        "description": "Training Whisper model on custom dataset",
+        "tags": ["Speech", "ASR", "Audio"],
+        "lastUpdated": "2025-06-24T07:35:15Z"
+      }
+    },
+    {
+      "id": "job_o1p2q3r4s5",
+      "gpu": "AMD MI100",
+      "region": "eu-west-2",
+      "cost": 6.75,
+      "status": "completed",
+      "runtime": "02:10:30",
+      "createdAt": "2025-06-21T15:45:00Z",
+      "metadata": {
+        "instanceType": "custom-amd-2",
+        "memoryUsage": "22GB / 32GB",
+        "cpuCores": 32,
+        "storageUsage": "75GB / 250GB",
+        "owner": "isabel@example.com",
+        "project": "Molecular Dynamics",
+        "priority": "medium",
+        "description": "Simulating protein folding",
+        "tags": ["Molecular", "Simulation", "Biology"],
+        "lastUpdated": "2025-06-21T17:55:30Z"
+      }
+    },
+    {
+      "id": "job_t6u7v8w9x0",
+      "gpu": "NVIDIA V100",
+      "region": "us-east-2",
+      "cost": 7.2,
+      "status": "failed",
+      "runtime": "01:15:05",
+      "createdAt": "2025-06-22T20:30:00Z",
+      "metadata": {
+        "instanceType": "p3.2xlarge",
+        "memoryUsage": "15GB / 16GB",
+        "cpuCores": 8,
+        "storageUsage": "60GB / 100GB",
+        "owner": "jack@example.com",
+        "project": "Generative Art",
+        "priority": "low",
+        "description": "Training StyleGAN for artwork generation",
+        "tags": ["GAN", "Art", "Generation"],
+        "lastUpdated": "2025-06-22T21:45:05Z",
+        "errorMessage": "Process terminated unexpectedly with exit code 137 (out of memory)"
+      }
+    },
+    {
+      "id": "job_y1z2a3b4c5",
+      "gpu": "NVIDIA A10G",
+      "region": "ap-southeast-2",
+      "cost": 3.9,
+      "status": "running",
+      "runtime": "00:40:25",
+      "createdAt": "2025-06-24T09:50:00Z",
+      "metadata": {
+        "instanceType": "g5.2xlarge",
+        "memoryUsage": "16GB / 24GB",
+        "cpuCores": 8,
+        "storageUsage": "40GB / 150GB",
+        "owner": "karen@example.com",
+        "project": "Object Detection",
+        "priority": "medium",
+        "description": "Fine-tuning YOLO on custom dataset",
+        "tags": ["Computer Vision", "YOLO", "Detection"],
+        "lastUpdated": "2025-06-24T10:30:25Z"
+      }
+    },
+    {
+      "id": "job_d6e7f8g9h0",
+      "gpu": "NVIDIA T4",
+      "region": "us-west-1",
+      "cost": 1.85,
+      "status": "queued",
+      "runtime": "00:00:00",
+      "createdAt": "2025-06-24T16:20:00Z",
+      "metadata": {
+        "instanceType": "g4dn.xlarge",
+        "memoryUsage": "0GB / 16GB",
+        "cpuCores": 4,
+        "storageUsage": "0GB / 100GB",
+        "owner": "leo@example.com",
+        "project": "Text-to-Speech",
+        "priority": "low",
+        "description": "Generating audio narration from text",
+        "tags": ["TTS", "Audio", "Speech"],
+        "lastUpdated": "2025-06-24T16:20:00Z"
+      }
+    },
+    {
+      "id": "job_i1j2k3l4m5",
+      "gpu": "NVIDIA A100",
+      "region": "eu-north-1",
+      "cost": 10.5,
+      "status": "running",
+      "runtime": "03:15:40",
+      "createdAt": "2025-06-23T08:10:00Z",
+      "metadata": {
+        "instanceType": "p4d.24xlarge",
+        "memoryUsage": "34GB / 40GB",
+        "cpuCores": 96,
+        "storageUsage": "150GB / 200GB",
+        "owner": "mia@example.com",
+        "project": "Large Language Model",
+        "priority": "high",
+        "description": "Fine-tuning LLM for code generation",
+        "tags": ["LLM", "NLP", "Code"],
+        "lastUpdated": "2025-06-24T11:25:40Z"
+      }
+    },
+    {
+      "id": "job_n6o7p8q9r0",
+      "gpu": "AMD MI210",
+      "region": "ap-east-1",
+      "cost": 8.15,
+      "status": "completed",
+      "runtime": "02:30:15",
+      "createdAt": "2025-06-22T04:25:00Z",
+      "metadata": {
+        "instanceType": "custom-amd-3",
+        "memoryUsage": "48GB / 64GB",
+        "cpuCores": 48,
+        "storageUsage": "110GB / 300GB",
+        "owner": "noah@example.com",
+        "project": "Financial Modeling",
+        "priority": "high",
+        "description": "Monte Carlo simulation for risk assessment",
+        "tags": ["Finance", "Simulation", "Risk"],
+        "lastUpdated": "2025-06-22T06:55:15Z"
+      }
+    },
+    {
+      "id": "job_s1t2u3v4w5",
+      "gpu": "NVIDIA L4",
+      "region": "us-east-1",
+      "cost": 2.95,
+      "status": "cancelled",
+      "runtime": "00:25:10",
+      "createdAt": "2025-06-23T21:40:00Z",
+      "metadata": {
+        "instanceType": "g5g.2xlarge",
+        "memoryUsage": "8GB / 16GB",
+        "cpuCores": 8,
+        "storageUsage": "20GB / 100GB",
+        "owner": "olivia@example.com",
+        "project": "Image Generation",
+        "priority": "low",
+        "description": "Testing Stable Diffusion parameters",
+        "tags": ["Diffusion", "Image", "Generation"],
+        "lastUpdated": "2025-06-23T22:05:10Z"
+      }
+    }
+  ]
+  
