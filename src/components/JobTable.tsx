@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react"
+import { useState, useEffect } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,70 +10,85 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
-} from "@tanstack/react-table"
-import { Copy, ChevronsUpDown } from "lucide-react"
+} from "@tanstack/react-table";
+import { Copy, ChevronsUpDown } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { exportToFile } from "@/lib/export";
+import dayjs from "dayjs";
 
 import { useJobs } from "@/hooks/useJobs";
 
-
-
-
 export type Job = {
-  id: string
-  gpu: string
-  region: string
-  cost: number
-  status: "running" | "completed" | "failed" | "queued" | "cancelled"
-  runtime: string
-  createdAt: string
-  metadata: {
-    instanceType: string
-    memoryUsage: string
-    cpuCores: number
-    storageUsage: string
-    owner: string
-    project: string
-    priority: "low" | "medium" | "high"
-    description: string
-    tags: string[]
-    lastUpdated: string
-    errorMessage?: string
+  id: string;
+  gpu: string;
+  region: string;
+  cost: number;
+  status: "running" | "completed" | "failed" | "queued" | "cancelled";
+  runtime: number; // seconds for numeric filtering
+  createdAt: string;
+  metadata: any;
+};
+
+
+
+function handleExport(data: any[], filters: object, type: "csv" | "json") {
+  const timestamp = dayjs().format("YYYYMMDD_HHmmss");
+  const filename = `gpu_jobs_export_${timestamp}.${type}`;
+
+  if (type === "csv") {
+    const header = Object.keys(data[0]).join(",");
+    const rows = data.map((row) => Object.values(row).join(",")).join("\n");
+    exportToFile(filename, `${header}\n${rows}`, "csv");
+  } else {
+    const json = JSON.stringify({ meta: { timestamp, filters }, jobs: data }, null, 2);
+    exportToFile(filename, json, "json");
   }
 }
 
 export function JobTable() {
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const { toast } = useToast()
-  const { data, isLoading, error } = useJobs();
-  console.log(data);
-  
+  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { toast } = useToast();
+  const { data } = useJobs();
+  const jobsData = data || [];
 
-  if (isLoading) {
-    return <div>Loading jobs...</div>;
-  }
+  const uniqueRegions = Array.from(new Set(jobsData.map((job) => job.region)));
+  const uniqueGPUs = Array.from(new Set(jobsData.map((job) => job.gpu)));
 
-  if (error) {
-    return <div>Failed to load jobs.</div>;
-  }
-  const jobsData = data?.jobs || [];
+  // Cost range filter state + debounce
+  const [costRange, setCostRange] = useState({ min: "", max: "" });
+  const [debouncedCost, setDebouncedCost] = useState(costRange);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      table.getColumn("cost")?.setFilterValue(debouncedCost);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [debouncedCost]);
+
+  const [minRuntime, setMinRuntime] = useState({ h: "", m: "", s: "" });
+  const [maxRuntime, setMaxRuntime] = useState({ h: "", m: "", s: "" });
+
+  useEffect(() => {
+    table.getColumn("runtime")?.setFilterValue({ minRuntime, maxRuntime });
+  }, [minRuntime, maxRuntime]);
 
   const columns: ColumnDef<Job>[] = [
     {
       accessorKey: "id",
       header: "Job ID",
-      cell: ({ row }) => <div className="font-medium">{row.getValue("id")}</div>,
+      cell: ({ row }) => <div className="font-mono text-xs">{row.getValue("id")}</div>,
     },
     {
       accessorKey: "gpu",
@@ -89,52 +104,73 @@ export function JobTable() {
     },
     {
       accessorKey: "cost",
-      header: "Cost",
-      cell: ({ row }) => <div>${row.getValue<number>("cost").toFixed(2)}</div>,
+      header: "Hourly Cost ($)",
+      filterFn: (row, columnId, filterValue) => {
+        const val = row.getValue<number>(columnId);
+        const min = parseFloat(filterValue.min);
+        const max = parseFloat(filterValue.max);
+        if (!isNaN(min) && val < min) return false;
+        if (!isNaN(max) && val > max) return false;
+        return true;
+      },
+      cell: ({ row }) => {
+        const cost = row.getValue<number>("cost");
+        return <div>${cost.toFixed(2)}</div>;
+      },
     },
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue<string>("status")
-        return (
-          <Badge
-            variant="outline"
-            className={`
-              ${status === "running" ? "border-blue-500 text-blue-500 bg-blue-50" : ""}
-              ${status === "completed" ? "border-green-500 text-green-500 bg-green-50" : ""}
-              ${status === "failed" ? "border-red-500 text-red-500 bg-red-50" : ""}
-              ${status === "queued" ? "border-yellow-500 text-yellow-500 bg-yellow-50" : ""}
-              ${status === "cancelled" ? "border-gray-500 text-gray-500 bg-gray-50" : ""}
-            `}
-          >
-            {status}
-          </Badge>
-        )
-      },
-      filterFn: "equals",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-xs">
+          {row.getValue("status")}
+        </Badge>
+      ),
     },
     {
       accessorKey: "runtime",
       header: "Runtime",
-      cell: ({ row }) => <div>{row.getValue("runtime")}</div>,
+      filterFn: (row, columnId, filterValue) => {
+        const val = row.getValue<number>(columnId);
+
+        const min =
+          (parseInt(filterValue.minRuntime?.h || "0") || 0) * 3600 +
+          (parseInt(filterValue.minRuntime?.m || "0") || 0) * 60 +
+          (parseInt(filterValue.minRuntime?.s || "0") || 0);
+
+        const max =
+          (parseInt(filterValue.maxRuntime?.h || "0") || 0) * 3600 +
+          (parseInt(filterValue.maxRuntime?.m || "0") || 0) * 60 +
+          (parseInt(filterValue.maxRuntime?.s || "0") || 0);
+
+        if ((filterValue.minRuntime && val < min) || (filterValue.maxRuntime && max > 0 && val > max)) {
+          return false;
+        }
+
+        return true;
+      },
+      cell: ({ row }) => {
+        const sec = row.getValue<number>("runtime");
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = Math.floor(sec % 60);
+        return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+      },
     },
     {
       accessorKey: "createdAt",
-      header: ({ column }) => {
-        return (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Created At
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Created At
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
-        const date = new Date(row.getValue("createdAt"))
-        return <div>{date.toLocaleString()}</div>
+        const date = new Date(row.getValue("createdAt"));
+        return <div>{date.toLocaleString()}</div>;
       },
     },
-  ]
+  ];
 
   const table = useReactTable({
     data: jobsData,
@@ -144,103 +180,117 @@ export function JobTable() {
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
-  })
-
-  const uniqueGPUs = Array.from(new Set(jobsData.map((job) => job.gpu)))
-  const uniqueRegions = Array.from(new Set(jobsData.map((job) => job.region)))
-  const uniqueStatuses = Array.from(new Set(jobsData.map((job) => job.status)))
+    state: { sorting, columnFilters },
+  });
 
   const handleRowClick = (job: Job) => {
-    setSelectedJob(job)
-    setSheetOpen(true)
-  }
+    setSelectedJob(job);
+    setSheetOpen(true);
+  };
 
   const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
-    toast({
-      title: "Copied to clipboard",
-      description: `${label} has been copied to clipboard`,
-    })
-  }
+      navigator.clipboard.writeText(text).then(() => {
+        toast(`${label} copied`, { description: "Copied to clipboard." });
+      });
+    };
+    
+  
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div>
-          <Select onValueChange={(value) => table.getColumn("gpu")?.setFilterValue(value === "all" ? undefined : value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by GPU" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All GPUs</SelectItem>
-              {uniqueGPUs.map((gpu) => (
-                <SelectItem key={gpu} value={gpu}>
-                  {gpu}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Select onValueChange={(value) => table.getColumn("region")?.setFilterValue(value === "all" ? undefined : value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by Region" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              {uniqueRegions.map((region) => (
-                <SelectItem key={region} value={region}>
-                  {region}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Select onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {uniqueStatuses.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <div className="flex flex-wrap gap-4">
+        {/* Region */}
+        <Select onValueChange={(val) => table.getColumn("region")?.setFilterValue(val === "all" ? undefined : val)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Region" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {uniqueRegions.map((r) => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <div className="rounded-md border">
+        {/* GPU */}
+        <Select onValueChange={(val) => table.getColumn("gpu")?.setFilterValue(val === "all" ? undefined : val)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="GPU" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {uniqueGPUs.map((g) => (
+              <SelectItem key={g} value={g}>{g}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Cost */}
+        <Input
+          placeholder="Min Cost"
+          type="number"
+          value={costRange.min}
+          onChange={(e) => {
+            const val = e.target.value;
+            setCostRange((prev) => ({ ...prev, min: val }));
+            setDebouncedCost({ ...costRange, min: val });
+          }}
+          className="w-24"
+        />
+        <Input
+          placeholder="Max Cost"
+          type="number"
+          value={costRange.max}
+          onChange={(e) => {
+            const val = e.target.value;
+            setCostRange((prev) => ({ ...prev, max: val }));
+            setDebouncedCost({ ...costRange, max: val });
+          }}
+          className="w-24"
+        />
+
+        {/* Runtime Min */}
+        <div className="flex gap-1">
+          <Input placeholder="Min H" className="w-17" value={minRuntime.h} onChange={(e) => setMinRuntime((p) => ({ ...p, h: e.target.value }))} />
+          <Input placeholder="Min M" className="w-17" value={minRuntime.m} onChange={(e) => setMinRuntime((p) => ({ ...p, m: e.target.value }))} />
+          <Input placeholder="Min S" className="w-17" value={minRuntime.s} onChange={(e) => setMinRuntime((p) => ({ ...p, s: e.target.value }))} />
+        </div>
+
+        {/* Runtime Max */}
+        <div className="flex gap-1">
+          <Input placeholder="Max H" className="w-18" value={maxRuntime.h} onChange={(e) => setMaxRuntime((p) => ({ ...p, h: e.target.value }))} />
+          <Input placeholder="Max M" className="w-18" value={maxRuntime.m} onChange={(e) => setMaxRuntime((p) => ({ ...p, m: e.target.value }))} />
+          <Input placeholder="Max S" className="w-18" value={maxRuntime.s} onChange={(e) => setMaxRuntime((p) => ({ ...p, s: e.target.value }))} />
+        </div>
+
+        <Button
+        className="ml-auto"
+        onClick={() =>
+          handleExport(table.getFilteredRowModel().rows.map(r => r.original), columnFilters, "csv")
+        }
+      >
+        Export CSV
+        </Button>
+      
+    </div>
+
+      <div className="rounded border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  )
-                })}
+            {table.getHeaderGroups().map((hg) => (
+              <TableRow key={hg.id}>
+                {hg.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleRowClick(row.original)}
-                >
+                <TableRow key={row.id} onClick={() => handleRowClick(row.original)} className="hover:bg-muted/50 cursor-pointer">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
@@ -248,9 +298,7 @@ export function JobTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
+                <TableCell colSpan={columns.length} className="text-center">No results.</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -258,151 +306,33 @@ export function JobTable() {
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="sm:max-w-md">
+        <SheetContent side="right">
           {selectedJob && (
             <>
               <SheetHeader>
                 <SheetTitle>Job Details</SheetTitle>
               </SheetHeader>
-              <ScrollArea className="h-[calc(100vh-80px)] pr-4">
-                <div className="px-6 py-6 space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-medium text-muted-foreground">Job ID</h3>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => copyToClipboard(selectedJob.id, "Job ID")}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm font-mono">{selectedJob.id}</p>
+              <ScrollArea className="pr-4">
+                <div className="space-y-4 p-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm">Job ID</h3>
+                    <Button onClick={() => copyToClipboard(selectedJob.id, "Job ID")} size="icon" variant="outline">
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
+                  <pre className="bg-muted rounded p-2 text-xs">{selectedJob.id}</pre>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-medium text-muted-foreground">GPU</h3>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => copyToClipboard(selectedJob.gpu, "GPU")}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm">{selectedJob.gpu}</p>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm">GPU</h3>
+                    <Button onClick={() => copyToClipboard(selectedJob.gpu, "GPU")} size="icon" variant="outline">
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
+                  <pre className="bg-muted rounded p-2 text-xs">{selectedJob.gpu}</pre>
 
                   <Separator />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-medium text-muted-foreground">Region</h3>
-                      <p className="text-sm">{selectedJob.region}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                      <Badge
-                        variant="outline"
-                        className={`
-                          ${selectedJob.status === "running" ? "border-blue-500 text-blue-500 bg-blue-50" : ""}
-                          ${selectedJob.status === "completed" ? "border-green-500 text-green-500 bg-green-50" : ""}
-                          ${selectedJob.status === "failed" ? "border-red-500 text-red-500 bg-red-50" : ""}
-                          ${selectedJob.status === "queued" ? "border-yellow-500 text-yellow-500 bg-yellow-50" : ""}
-                          ${selectedJob.status === "cancelled" ? "border-gray-500 text-gray-500 bg-gray-50" : ""}
-                        `}
-                      >
-                        {selectedJob.status}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-medium text-muted-foreground">Cost</h3>
-                      <p className="text-sm">${selectedJob.cost.toFixed(2)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-medium text-muted-foreground">Runtime</h3>
-                      <p className="text-sm">{selectedJob.runtime}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-medium text-muted-foreground">Created At</h3>
-                      <p className="text-sm">{new Date(selectedJob.createdAt).toLocaleString()}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-medium text-muted-foreground">Last Updated</h3>
-                      <p className="text-sm">{new Date(selectedJob.metadata.lastUpdated).toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Metadata</h3>
-                    <div className="bg-muted rounded-md p-3 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-medium text-muted-foreground">Instance Type</h4>
-                          <p className="text-xs">{selectedJob.metadata.instanceType}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-medium text-muted-foreground">Memory Usage</h4>
-                          <p className="text-xs">{selectedJob.metadata.memoryUsage}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-medium text-muted-foreground">CPU Cores</h4>
-                          <p className="text-xs">{selectedJob.metadata.cpuCores}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-medium text-muted-foreground">Storage Usage</h4>
-                          <p className="text-xs">{selectedJob.metadata.storageUsage}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-muted-foreground">Owner</h4>
-                        <p className="text-xs">{selectedJob.metadata.owner}</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-muted-foreground">Project</h4>
-                        <p className="text-xs">{selectedJob.metadata.project}</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-muted-foreground">Priority</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {selectedJob.metadata.priority}
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-muted-foreground">Description</h4>
-                        <p className="text-xs">{selectedJob.metadata.description}</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-muted-foreground">Tags</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {selectedJob.metadata.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      {selectedJob.metadata.errorMessage && (
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-medium text-muted-foreground">Error Message</h4>
-                          <div className="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-600">
-                            {selectedJob.metadata.errorMessage}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <h3 className="text-sm">Full Metadata</h3>
+                  <pre className="bg-muted rounded p-2 text-xs overflow-x-auto">{JSON.stringify(selectedJob, null, 2)}</pre>
                 </div>
               </ScrollArea>
             </>
@@ -410,5 +340,5 @@ export function JobTable() {
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }
